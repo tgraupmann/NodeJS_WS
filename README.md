@@ -11,6 +11,16 @@ npm install ws
 
 ## Usage
 
+**Start the server**
+
 ```
-node app.js
+node app.js &
+```
+
+**Send binary data from the client**
+
+* Run a couple instances of the client.
+
+```
+node client_send_binary.js
 ```
