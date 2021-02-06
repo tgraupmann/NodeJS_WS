@@ -8,3 +8,9 @@ A NodeJS WebSocket Server using WS
 ```
 npm install ws
 ````
+
+## Usage
+
+```
+node app.js
+```
