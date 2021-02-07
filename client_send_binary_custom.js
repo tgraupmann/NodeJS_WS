@@ -36,7 +36,7 @@ function appendUInt64FromString(ui8a, ui64Str) {
       //console.log('byte: ', i, ' ', 0);
       result = appendByte(result, 0);
     } else {
-      let byte = parseInt('0x' + ui64Str[i - 16 + ui64Str.length]);
+      let byte = parseInt('0x' + ui64Str[i - 16 + ui64Str.length], 16);
       //console.log('byte: ', i, ' ', i - 16 + ui64Str.length, ' ', byte);
       result = appendByte(result, byte);
     }
