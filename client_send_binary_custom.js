@@ -192,7 +192,7 @@ function sendPartialFrame() {
     header |= EChromaStreamHeaderFormat_REF_FRAME_MOUSEPAD;
   }
 
-  if (header == 0) {
+  if (header == EChromaStreamHeaderFormat_FULL_FRAME) {
     console.log('Skip sending partial - this is a full frame!');
     return;
   } else if (header == EChromaStreamHeaderFormat_REF_FRAME) {
