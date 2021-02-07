@@ -27,9 +27,21 @@ function appendUInt32(ui8a, ui32) {
   return result;
 }
 
-function appendUInt64(ui8a, ui64) {
-  let result = appendUInt32(ui8a, (ui64 >> 32) & 0xFFFFFFFF);
-  result = appendUInt32(result, ui64 & 0xFFFFFFFF);
+function appendUInt64FromString(ui8a, ui64Str) {
+  console.log('appendUInt64FromString: ', ui64Str);
+  let result = ui8a;
+  for (let i = 0; i < 16; ++i) {
+    let index = 16 - i;
+    if (index > ui64Str.length) {
+      //console.log('byte: ', i, ' ', 0);
+      result = appendByte(result, 0);
+    } else {
+      let byte = parseInt('0x' + ui64Str[i - 16 + ui64Str.length]);
+      //console.log('byte: ', i, ' ', i - 16 + ui64Str.length, ' ', byte);
+      result = appendByte(result, byte);
+    }
+
+  }
   return result;
 }
 
@@ -55,10 +67,7 @@ ws.on('open', function open() {
   //console.log(now.toString(16));
   console.log('Timestamp: ', insertDashes(now.toString(16)));
 
-  //console.log('First Part: ', insertDashes((now >> 32).toString(16)));
-  //console.log('Second Part: ', insertDashes((now & 0xFFFFFFFF).toString(16)));
-
-  u8 = appendUInt64(u8, parseInt(now.toString(16), 16));
+  u8 = appendUInt64FromString(u8, now.toString(16));
   u8 = appendByte(u8, 0x0); // EChromaStreamHeaderFormat_FULL_FRAME
 
   let color = 0x000000FF; //red
