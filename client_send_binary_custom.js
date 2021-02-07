@@ -28,7 +28,7 @@ function appendUInt32(ui8a, ui32) {
 }
 
 function appendUInt64FromString(ui8a, ui64Str) {
-  console.log('appendUInt64FromString: ', ui64Str);
+  //console.log('appendUInt64FromString: ', ui64Str);
   let result = ui8a;
   for (let i = 0; i < 16; ++i) {
     let index = 16 - i;
@@ -57,8 +57,19 @@ function insertDashes(str) {
   return result;
 }
 
-ws.on('open', function open() {
-  console.log('Connected to WebSocket');
+// treat as bit flags in the header byte
+const EChromaStreamHeaderFormat_FULL_FRAME = 0;                 //00000000
+const EChromaStreamHeaderFormat_FULL_KEYFRAME = 0x1;            //00000001
+const EChromaStreamHeaderFormat_REF_FRAME = 0xFC;               //11111100
+const EChromaStreamHeaderFormat_REF_FRAME_CHROMA_LINK = 1 << 7; //10000000
+const EChromaStreamHeaderFormat_REF_FRAME_HEADSET = 1 << 6;     //01000000
+const EChromaStreamHeaderFormat_REF_FRAME_KEYBOARD = 1 << 5;    //00100000
+const EChromaStreamHeaderFormat_REF_FRAME_KEYPAD = 1 << 4;      //00010000
+const EChromaStreamHeaderFormat_REF_FRAME_MOUSE = 1 << 3;       //00001000
+const EChromaStreamHeaderFormat_REF_FRAME_MOUSEPAD = 1 << 2;    //00000100
+
+function sendRefFrame() {
+  console.log('Sending ref frame');
 
   let u8 = new Uint8Array(0);
 
@@ -68,7 +79,35 @@ ws.on('open', function open() {
   console.log('Timestamp: ', insertDashes(now.toString(16)));
 
   u8 = appendUInt64FromString(u8, now.toString(16));
-  u8 = appendByte(u8, 0x0); // EChromaStreamHeaderFormat_FULL_FRAME
+  u8 = appendByte(u8, EChromaStreamHeaderFormat_REF_FRAME);
+
+  u8 = appendUInt32(u8, now & 0xFFFFFFFF);
+
+  console.log('Sending data ', u8.length, ' bytes...');
+  ws.send(u8);
+  console.log('Sent data!');
+}
+
+function sendFullFrame(keyframe) {
+  if (keyframe) {
+    console.log('Sending full keyframe');
+  } else {
+    console.log('Sending full frame');
+  }
+
+  let u8 = new Uint8Array(0);
+
+  const now = Date.now(); // Unix timestamp in milliseconds
+  //console.log(now.toString());
+  //console.log(now.toString(16));
+  console.log('Timestamp: ', insertDashes(now.toString(16)));
+
+  u8 = appendUInt64FromString(u8, now.toString(16));
+  if (keyframe) {
+    u8 = appendByte(u8, EChromaStreamHeaderFormat_FULL_KEYFRAME);
+  } else {
+    u8 = appendByte(u8, EChromaStreamHeaderFormat_FULL_FRAME);
+  }
 
   let color = 0x000000FF; //red
 
@@ -111,6 +150,159 @@ ws.on('open', function open() {
   console.log('Sending data ', u8.length, ' bytes...');
   ws.send(u8);
   console.log('Sent data!');
+}
+
+function sendPartialFrame() {
+  console.log('Sending partial frame');
+
+  let u8 = new Uint8Array(0);
+
+  const now = Date.now(); // Unix timestamp in milliseconds
+  //console.log(now.toString());
+  //console.log(now.toString(16));
+  console.log('Timestamp: ', insertDashes(now.toString(16)));
+
+  u8 = appendUInt64FromString(u8, now.toString(16));
+
+  // A partial is a combination of the flags below
+  // None would be a full frame
+  // All would be a ref frame
+  /*
+  EChromaStreamHeaderFormat_REF_FRAME_CHROMA_LINK
+  EChromaStreamHeaderFormat_REF_FRAME_HEADSET
+  EChromaStreamHeaderFormat_REF_FRAME_KEYBOARD
+  EChromaStreamHeaderFormat_REF_FRAME_KEYPAD
+  EChromaStreamHeaderFormat_REF_FRAME_MOUSE
+  EChromaStreamHeaderFormat_REF_FRAME_MOUSEPAD
+  */
+
+  //randomly include some masks
+  let header = 0;
+  if (Math.floor(Math.random() * 100) % 2) {
+    header |= EChromaStreamHeaderFormat_REF_FRAME_CHROMA_LINK;
+  }
+  if (Math.floor(Math.random() * 100) % 2) {
+    header |= EChromaStreamHeaderFormat_REF_FRAME_HEADSET;
+  }
+  if (Math.floor(Math.random() * 100) % 2) {
+    header |= EChromaStreamHeaderFormat_REF_FRAME_KEYBOARD;
+  }
+  if (Math.floor(Math.random() * 100) % 2) {
+    header |= EChromaStreamHeaderFormat_REF_FRAME_KEYPAD;
+  }
+  if (Math.floor(Math.random() * 100) % 2) {
+    header |= EChromaStreamHeaderFormat_REF_FRAME_MOUSE;
+  }
+  if (Math.floor(Math.random() * 100) % 2) {
+    header |= EChromaStreamHeaderFormat_REF_FRAME_MOUSEPAD;
+  }
+
+  if (header == 0) {
+    console.log('Skip sending partial - this is a full frame!');
+    return;
+  } else if (header == EChromaStreamHeaderFormat_REF_FRAME) {
+    console.log('Skip sending partial - this is a ref frame!');
+    return;
+  }
+
+  u8 = appendByte(u8, header);
+
+  let color = 0x000000FF; //red
+
+  //chromalink
+  if ((header & EChromaStreamHeaderFormat_REF_FRAME_CHROMA_LINK) == EChromaStreamHeaderFormat_REF_FRAME_CHROMA_LINK) {
+    u8 = appendUInt32(u8, now & 0xFFFFFFFF); // ref timestamp
+  } else {
+    let size = 5;
+    for (let i = 0; i < size; ++i) {
+      u8 = appendUInt32(u8, color);
+    }
+  }
+
+  //headset
+  if ((header & EChromaStreamHeaderFormat_REF_FRAME_HEADSET) == EChromaStreamHeaderFormat_REF_FRAME_HEADSET) {
+    u8 = appendUInt32(u8, now & 0xFFFFFFFF); // ref timestamp
+  } else {
+    size = 5;
+    for (let i = 0; i < size; ++i) {
+      u8 = appendUInt32(u8, color);
+    }
+  }
+
+  //keyboard
+  if ((header & EChromaStreamHeaderFormat_REF_FRAME_KEYBOARD) == EChromaStreamHeaderFormat_REF_FRAME_KEYBOARD) {
+    u8 = appendUInt32(u8, now & 0xFFFFFFFF); // ref timestamp
+  } else {
+    size = 22 * 6;
+    for (let i = 0; i < size; ++i) {
+      u8 = appendUInt32(u8, color);
+    }
+  }
+
+  //keypad
+  if ((header & EChromaStreamHeaderFormat_REF_FRAME_KEYPAD) == EChromaStreamHeaderFormat_REF_FRAME_KEYPAD) {
+    u8 = appendUInt32(u8, now & 0xFFFFFFFF); // ref timestamp
+  } else {
+    size = 4 * 5;
+    for (let i = 0; i < size; ++i) {
+      u8 = appendUInt32(u8, color);
+    }
+  }
+
+  //mouse
+  if ((header & EChromaStreamHeaderFormat_REF_FRAME_MOUSE) == EChromaStreamHeaderFormat_REF_FRAME_MOUSE) {
+    u8 = appendUInt32(u8, now & 0xFFFFFFFF); // ref timestamp
+  } else {
+    size = 7 * 9;
+    for (let i = 0; i < size; ++i) {
+      u8 = appendUInt32(u8, color);
+    }
+  }
+
+  //mousepad
+  if ((header & EChromaStreamHeaderFormat_REF_FRAME_MOUSEPAD) == EChromaStreamHeaderFormat_REF_FRAME_MOUSEPAD) {
+    u8 = appendUInt32(u8, now & 0xFFFFFFFF); // ref timestamp
+  } else {
+    size = 15;
+    for (let i = 0; i < size; ++i) {
+      u8 = appendUInt32(u8, color);
+    }
+  }
+
+  console.log('Sending data ', u8.length, ' bytes...');
+  ws.send(u8);
+  console.log('Sent data!');
+}
+
+ws.on('open', function open() {
+  console.log('Connected to WebSocket');
+
+  let frameCount = 0;
+  let keyframe = true;
+
+  setInterval(function () {
+    let choice = Math.floor(Math.random() * 100) % 3 + 1;
+    ++frameCount;
+    if (frameCount >= 300) {
+      frameCount = 0;
+      choice = 0; //keyframe
+    }
+    switch (choice) {
+      case 0:
+        sendFullFrame(true);
+        break;
+      case 1:
+        sendFullFrame(false);
+        break;
+      case 2:
+        sendRefFrame();
+        break;
+      case 3:
+        sendPartialFrame();
+        break;
+    }
+  }, 33);
+
   //exit();
 });
 
