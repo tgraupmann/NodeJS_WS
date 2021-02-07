@@ -69,38 +69,31 @@ const EChromaStreamHeaderFormat_REF_FRAME_MOUSE = 1 << 3;       //00001000
 const EChromaStreamHeaderFormat_REF_FRAME_MOUSEPAD = 1 << 2;    //00000100
 
 function sendRefFrame() {
-  console.log('Sending ref frame');
 
   let u8 = new Uint8Array(0);
 
   const now = Date.now(); // Unix timestamp in milliseconds
   //console.log(now.toString());
   //console.log(now.toString(16));
-  console.log('Timestamp: ', insertDashes(now.toString(16)));
+  //console.log('Timestamp: ', insertDashes(now.toString(16)));
 
   u8 = appendUInt64FromString(u8, now.toString(16));
   u8 = appendByte(u8, EChromaStreamHeaderFormat_REF_FRAME);
 
   u8 = appendUInt32(u8, now & 0xFFFFFFFF);
 
-  console.log('Sending data ', u8.length, ' bytes...');
+  console.log('Sending data ', u8.length, ' bytes - Ref frame');
   ws.send(u8);
-  console.log('Sent data!');
 }
 
 function sendFullFrame(keyframe) {
-  if (keyframe) {
-    console.log('Sending full keyframe');
-  } else {
-    console.log('Sending full frame');
-  }
 
   let u8 = new Uint8Array(0);
 
   const now = Date.now(); // Unix timestamp in milliseconds
   //console.log(now.toString());
   //console.log(now.toString(16));
-  console.log('Timestamp: ', insertDashes(now.toString(16)));
+  //console.log('Timestamp: ', insertDashes(now.toString(16)));
 
   u8 = appendUInt64FromString(u8, now.toString(16));
   if (keyframe) {
@@ -147,20 +140,22 @@ function sendFullFrame(keyframe) {
     u8 = appendUInt32(u8, color);
   }
 
-  console.log('Sending data ', u8.length, ' bytes...');
+  if (keyframe) {
+    console.log('Sending data ', u8.length, ' bytes - Full keyframe');
+  } else {
+    console.log('Sending data ', u8.length, ' bytes - Full frame');
+  }
   ws.send(u8);
-  console.log('Sent data!');
 }
 
 function sendPartialFrame() {
-  console.log('Sending partial frame');
 
   let u8 = new Uint8Array(0);
 
   const now = Date.now(); // Unix timestamp in milliseconds
   //console.log(now.toString());
   //console.log(now.toString(16));
-  console.log('Timestamp: ', insertDashes(now.toString(16)));
+  //console.log('Timestamp: ', insertDashes(now.toString(16)));
 
   u8 = appendUInt64FromString(u8, now.toString(16));
 
@@ -269,9 +264,8 @@ function sendPartialFrame() {
     }
   }
 
-  console.log('Sending data ', u8.length, ' bytes...');
+  console.log('Sending data ', u8.length, ' bytes - Partial frame');
   ws.send(u8);
-  console.log('Sent data!');
 }
 
 ws.on('open', function open() {
