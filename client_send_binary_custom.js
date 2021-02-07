@@ -60,7 +60,7 @@ function insertDashes(str) {
 // treat as bit flags in the header byte
 const EChromaStreamHeaderFormat_FULL_FRAME = 0;                 //00000000
 const EChromaStreamHeaderFormat_FULL_KEYFRAME = 0x1;            //00000001
-const EChromaStreamHeaderFormat_REF_FRAME = 0xFC;               //11111100
+const EChromaStreamHeaderFormat_REF_FRAME = 1 << 1;             //00000010
 const EChromaStreamHeaderFormat_REF_FRAME_CHROMA_LINK = 1 << 7; //10000000
 const EChromaStreamHeaderFormat_REF_FRAME_HEADSET = 1 << 6;     //01000000
 const EChromaStreamHeaderFormat_REF_FRAME_KEYBOARD = 1 << 5;    //00100000
