@@ -8,8 +8,8 @@ const wss = new WebSocket.Server({ port: 5050, path: '/chat' });
 function setupSpottyConnection() {
   wss.on('connection', function connection(ws) {
 
-    let timerClose = Math.floor(Math.random() * 1000);
-    // randomly close the connect in 0 to N seconds          
+    let timerClose = 2000 + Math.floor(Math.random() * 1000);
+    // randomly close the connection in 2 + (0 to N seconds)
     setTimeout(function () {
       ws.close();
     }, timerClose);
